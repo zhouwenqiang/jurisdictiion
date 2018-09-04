@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<head th:include="include :: header"></head>
+<body class="gray-bg">
+	<div class="wrapper wrapper-content ">
+		<div class="col-sm-12">
+			<div class="ibox">
+				<div class="ibox-body">
+					<ul class="nav nav-tabs" id="mytab">
+						<li class="active"><a href="#tab1"><i class="fa fa-file-text"></i>地市统计</a></li>
+						<li class=""><a href="#tab2"><i class="fa fa-briefcase"></i>TAC统计</a></li>
+						<li class=""><a href="#tab3"><i class="fa fa-briefcase"></i>营销活动统计</a></li>
+					</ul>
+					<div class="fixed-table-toolbar">
+						<div class="columns pull-left search col-md-2">
+							<input id="startDate" type="text" class="form-control" placeholder="开始时间" readonly="readonly">
+						</div>
+						<div class="columns pull-left search col-md-2 ">
+							<input id="endDate" type="text" class="form-control"  placeholder="结果时间" readonly="readonly">
+						</div>
+					</div>
+					<div class="tab-content">
+						<div id="tab1" class="tab-pane active">
+							<table id="exampleTable" data-mobile-responsive="true">
+							</table>
+						</div>
+						<div id="tab2" class="tab-pane ">
+							<!--<div class="fixed-table-toolbar">
+								<div class="columns pull-left search col-md-2">
+									<select id="setgroupid" class="selectpicker" class="form-control">
+									</select>
+								</div>
+							</div>-->
+							<table id="exampleTable2" data-mobile-responsive="true"></table>
+						</div>
+						<div id="tab3" class="tab-pane ">
+							<table id="exampleTable3" data-mobile-responsive="true"></table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--shiro控制bootstraptable行内按钮看见性 来自bootdo的创新方案 -->
+		<div>
+			<script type="text/javascript">
+				var s_edit_h = 'hidden';
+				var s_remove_h = 'hidden';
+				var s_resetPwd_h = 'hidden';
+			</script>
+		</div>
+		<div shiro:hasPermission="inforeport:separate:edit">
+			<script type="text/javascript">
+				s_edit_h = '';
+			</script>
+		</div>
+		<div shiro:hasPermission="inforeport:separate:remove">
+			<script type="text/javascript">
+				var s_remove_h = '';
+			</script>
+		</div>
+		<div shiro:hasPermission="inforeport:separate:resetPwd">
+			<script type="text/javascript">
+				var s_resetPwd_h = '';
+			</script>
+		</div>
+	</div>
+	<div th:include="include :: footer"></div>
+	<script type="text/javascript" src="/js/appjs/inforeport/marketing/tabmarketing.js"></script>
+</body>
+</html>

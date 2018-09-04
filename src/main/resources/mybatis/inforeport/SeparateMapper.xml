@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jurisdiction.inforeport.dao.SeparateDao">
+
+	<select id="get" resultType="com.jurisdiction.inforeport.entity.Separate">
+		select `ID`,`scTime`,`bind_imei`,`terminal_type`,`pro_msisdn`,`remarks` from separate where ID = #{value}
+	</select>
+
+	<select id="list" resultType="com.jurisdiction.inforeport.entity.Separate">
+		select `ID`,`scTime`,`bind_imei`,`terminal_type`,`pro_msisdn`,`remarks` from separate
+        <where>  
+		  		  <if test="id != null and id != ''"> and ID = #{id} </if>
+		  		  <if test="sctime != null and sctime != ''"> and scTime = #{sctime} </if>
+		  		  <if test="bindImei != null and bindImei != ''"> and bind_imei = #{bindImei} </if>
+		  		  <if test="terminalType != null and terminalType != ''"> and terminal_type = #{terminalType} </if>
+		  		  <if test="proMsisdn != null and proMsisdn != ''"> and pro_msisdn = #{proMsisdn} </if>
+		  		  <if test="remarks != null and remarks != ''"> and remarks = #{remarks} </if>
+		  		</where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+			<otherwise>
+                order by ID desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="count" resultType="int">
+		select count(*) from separate
+		 <where>  
+		  		  <if test="id != null and id != ''"> and ID = #{id} </if>
+		  		  <if test="sctime != null and sctime != ''"> and scTime = #{sctime} </if>
+		  		  <if test="bindImei != null and bindImei != ''"> and bind_imei = #{bindImei} </if>
+		  		  <if test="terminalType != null and terminalType != ''"> and terminal_type = #{terminalType} </if>
+		  		  <if test="proMsisdn != null and proMsisdn != ''"> and pro_msisdn = #{proMsisdn} </if>
+		  		  <if test="remarks != null and remarks != ''"> and remarks = #{remarks} </if>
+		  		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.jurisdiction.inforeport.entity.Separate" useGeneratedKeys="true" keyProperty="id">
+		insert into separate
+		(
+			`scTime`, 
+			`bind_imei`, 
+			`terminal_type`, 
+			`pro_msisdn`, 
+			`remarks`
+		)
+		values
+		(
+			#{sctime}, 
+			#{bindImei}, 
+			#{terminalType}, 
+			#{proMsisdn}, 
+			#{remarks}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.jurisdiction.inforeport.entity.Separate">
+		update separate 
+		<set>
+			<if test="sctime != null">`scTime` = #{sctime}, </if>
+			<if test="bindImei != null">`bind_imei` = #{bindImei}, </if>
+			<if test="terminalType != null">`terminal_type` = #{terminalType}, </if>
+			<if test="proMsisdn != null">`pro_msisdn` = #{proMsisdn}, </if>
+			<if test="remarks != null">`remarks` = #{remarks}</if>
+		</set>
+		where ID = #{id}
+	</update>
+	
+	<delete id="remove">
+		delete from separate where ID = #{value}
+	</delete>
+	
+	<delete id="batchRemove">
+		delete from separate where ID in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="listCity" resultType="com.jurisdiction.inforeport.entity.CitySeparate">
+
+		select dpg.group_id groupid,dpg.name,count(rest.imei_no) imeinoct,count(idct) sptts,SUM(bimeicount) bimeicount from (
+		select ud.user_id,ud.group_id,ud.create_date,ud.ids ,substring_index(ud.ids,',', 1) pid ,ii.imei_no,spt.id idct,COUNT(spt.bind_imei) bimeicount
+		from (select uda.group_id,uda.create_date,uda.user_id,ugp.ids from   user_datapermissionsgroup uda
+		INNER JOIN (
+		select getDataPermissionsGroupNodeList(dpg.group_id) as ids,udp.user_id  from user_datapermissionsgroup udp
+		INNER  JOIN
+		(select group_id,parent_id,name,order_num,del_flag from data_permissions_group where
+		parent_id in (select group_id from  data_permissions_group where parent_id=0))
+		dpg on(udp.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where> <if test="user_id != null and user_id != ''"> and udp.user_id = #{user_id} </if></where>) ugp
+		on (FIND_IN_SET(uda.group_id,ugp.ids) and uda.user_id=ugp.user_id and uda.selected_state=0)
+		GROUP BY uda.group_id
+		) ud
+		INNER  JOIN imei_info ii ON(ud.group_id=ii.GROUP_ID and ii.Status_Market=1)
+		LEFT JOIN separate spt ON (left(ii.imei_no,14)=spt.bind_imei)
+		<where>
+			<if test="startDate != null and startDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &gt;= #{startDate} </if>
+			<if test="endDate != null and endDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &lt;= #{endDate} </if>
+		</where>
+		GROUP BY ii.imei_no ORDER BY bimeicount
+		) rest
+		LEFT JOIN data_permissions_group dpg on(rest.pid=dpg.group_id  and dpg.del_flag=1)
+		GROUP BY rest.pid
+		<!--<where>
+			<if test="id != null and id != ''"> and ID = #{id} </if>
+			<if test="sctime != null and sctime != ''"> and scTime = #{sctime} </if>
+			<if test="bindImei != null and bindImei != ''"> and bind_imei = #{bindImei} </if>
+			<if test="terminalType != null and terminalType != ''"> and terminal_type = #{terminalType} </if>
+			<if test="proMsisdn != null and proMsisdn != ''"> and pro_msisdn = #{proMsisdn} </if>
+			<if test="remarks != null and remarks != ''"> and remarks = #{remarks} </if>
+		</where>-->
+		<choose>
+			<when test="sort != null and sort.trim() != ''">
+				order by ${sort} ${order}
+			</when>
+			<otherwise>
+				order by groupid
+			</otherwise>
+		</choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+	<select id="listRegion" resultType="com.jurisdiction.inforeport.entity.RegionSeparate">
+
+		select dpg.`name` name,dpg.group_id groupid,ii.IMEI_NO imeino,count(spt.bind_imei) sptts,ud.ids ,substring_index(ud.ids,',', 1) pid
+		from (select uda.group_id,uda.user_id,ugp.ids from   user_datapermissionsgroup uda
+		INNER JOIN (
+		select getDataPermissionsGroupNodeList(dpg.group_id) as ids,udp.user_id  from user_datapermissionsgroup udp
+		INNER  JOIN
+		(select group_id,parent_id,name,order_num,del_flag from data_permissions_group where
+		parent_id in (select group_id from  data_permissions_group where parent_id=0))
+		dpg on(udp.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where> <if test="user_id != null and user_id != ''"> and udp.user_id = #{user_id} </if></where>) ugp
+		on (FIND_IN_SET(uda.group_id,ugp.ids) and uda.user_id=ugp.user_id and uda.selected_state=0)
+		GROUP BY uda.group_id
+		) ud
+		INNER  JOIN imei_info ii ON(ud.group_id=ii.GROUP_ID and ii.Status_Market=1)
+		LEFT JOIN separate spt ON (left(ii.imei_no,14)=spt.bind_imei)
+		LEFT JOIN data_permissions_group dpg on(ud.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where>
+			<if test="user_id != null and user_id != ''"> and ud.user_id = #{user_id} </if>
+			<if test="startDate != null and startDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &gt;= #{startDate} </if>
+			<if test="endDate != null and endDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &lt;= #{endDate} </if>
+			<if test="pid != null and pid != ''"> and substring_index(ud.ids,',', 1) = #{pid} </if>
+		</where>
+		GROUP BY ii.IMEI_NO ORDER BY sptts desc
+		<!--<where>
+			<if test="id != null and id != ''"> and ID = #{id} </if>
+			<if test="sctime != null and sctime != ''"> and scTime = #{sctime} </if>
+			<if test="bindImei != null and bindImei != ''"> and bind_imei = #{bindImei} </if>
+			<if test="terminalType != null and terminalType != ''"> and terminal_type = #{terminalType} </if>
+			<if test="proMsisdn != null and proMsisdn != ''"> and pro_msisdn = #{proMsisdn} </if>
+			<if test="remarks != null and remarks != ''"> and remarks = #{remarks} </if>
+		</where>-->
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+	<select id="listDetails" resultType="com.jurisdiction.inforeport.entity.DetailsSeparate">
+		select st.bind_imei bindimei,st.pro_msisdn promsisdn,te.brand_name brandname,te.te_name tename
+		from separate  st
+		LEFT JOIN terminal_equipment te ON(st.terminal_type=te.MODEL_CODE)
+		<where>
+			<if test="imeino != null and imeino != ''"> and st.bind_imei=left(#{imeino},14) </if>
+		</where>
+		ORDER BY st.bind_imei
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+
+
+	<select id="groupSelectData" resultType="com.jurisdiction.inforeport.entity.CitySeparate">
+		select dpg.group_id groupid,dpg.`name` name from user_datapermissionsgroup udp
+				INNER  JOIN data_permissions_group dpg on(udp.group_id=dpg.group_id and dpg.parent_id=#{pid} and dpg.del_flag=1 )
+		ORDER BY dpg.order_num
+	</select>
+
+</mapper>

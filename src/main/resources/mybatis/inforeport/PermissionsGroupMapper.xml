@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jurisdiction.inforeport.dao.PermissionsGroupDao">
+
+	<select id="get" resultType="com.jurisdiction.inforeport.entity.PermissionsGroup">
+		select `group_id`,`parent_id`,`name`,`order_num`,`create_date`,`update_date`,`del_flag` from data_permissions_group where group_id = #{value}
+	</select>
+
+	<select id="list" resultType="com.jurisdiction.inforeport.entity.PermissionsGroup">
+		select distinct dp.`group_id`,dp.`parent_id`,dp.`name`,dp.`order_num`,dp.`create_date`,dp.`update_date`,dp.`del_flag` from data_permissions_group dp
+		left JOIN user_datapermissionsgroup ud ON(dp.group_id=ud.group_id)
+        <where>
+					<if test="userId != null and userId != ''"> and ud.user_id = #{userId} </if>
+		  		  <if test="groupId != null and groupId != ''"> and dp.group_id = #{groupId} </if>
+		  		  <if test="parentId != null and parentId != ''"> and dp.parent_id = #{parentId} </if>
+		  		  <if test="name != null and name != ''"> and dp.name = #{name} </if>
+		  		  <if test="orderNum != null and orderNum != ''"> and dp.order_num = #{orderNum} </if>
+		  		  <if test="createDate != null and createDate != ''"> and dp.create_date = #{createDate} </if>
+		  		  <if test="updateDate != null and updateDate != ''"> and dp.update_date = #{updateDate} </if>
+		  		  <if test="delFlag != null and delFlag != ''"> and dp.del_flag = #{delFlag} </if>
+		  		</where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+			<otherwise>
+                order by group_id desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="count" resultType="int">
+		select count(*) from data_permissions_group
+		 <where>  
+		  		  <if test="groupId != null and groupId != ''"> and group_id = #{groupId} </if>
+		  		  <if test="parentId != null and parentId != ''"> and parent_id = #{parentId} </if>
+		  		  <if test="name != null and name != ''"> and name = #{name} </if>
+		  		  <if test="orderNum != null and orderNum != ''"> and order_num = #{orderNum} </if>
+		  		  <if test="createDate != null and createDate != ''"> and create_date = #{createDate} </if>
+		  		  <if test="updateDate != null and updateDate != ''"> and update_date = #{updateDate} </if>
+		  		  <if test="delFlag != null and delFlag != ''"> and del_flag = #{delFlag} </if>
+		  		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.jurisdiction.inforeport.entity.PermissionsGroup" useGeneratedKeys="true" keyProperty="groupId">
+		insert into data_permissions_group
+		(
+			`parent_id`, 
+			`name`, 
+			`order_num`, 
+			`create_date`, 
+			`update_date`, 
+			`del_flag`
+		)
+		values
+		(
+			#{parentId}, 
+			#{name}, 
+			#{orderNum}, 
+			#{createDate}, 
+			#{updateDate}, 
+			#{delFlag}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.jurisdiction.inforeport.entity.PermissionsGroup">
+		update data_permissions_group 
+		<set>
+			<if test="parentId != null">`parent_id` = #{parentId}, </if>
+			<if test="name != null">`name` = #{name}, </if>
+			<if test="orderNum != null">`order_num` = #{orderNum}, </if>
+			<if test="createDate != null">`create_date` = #{createDate}, </if>
+			<if test="updateDate != null">`update_date` = #{updateDate}, </if>
+			<if test="delFlag != null">`del_flag` = #{delFlag}</if>
+		</set>
+		where group_id = #{groupId}
+	</update>
+	
+	<delete id="remove">
+		delete from data_permissions_group where group_id = #{value}
+	</delete>
+	
+	<delete id="batchRemove">
+		delete from data_permissions_group where group_id in 
+		<foreach item="groupId" collection="array" open="(" separator="," close=")">
+			#{groupId}
+		</foreach>
+	</delete>
+	<select id="listGroupByUserIdAll" resultType="com.jurisdiction.inforeport.entity.PermissionsGroup">
+		select distinct dpg.group_id,dpg.parent_id,dpg.`name` from data_permissions_group dpg
+		LEFT JOIN user_datapermissionsgroup udpg ON( dpg.group_id=udpg.group_id and dpg.del_flag=1)
+		where 1=1
+		<if test="_parameter != null"> and udpg.user_id = #{userId}</if>
+		order by
+		dpg.order_num
+	</select>
+</mapper>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jurisdiction.inforeport.dao.MarketingDao">
+
+	<select id="get" resultType="com.jurisdiction.inforeport.entity.Marketing">
+		select `ID`,`IMEI_ID`,`MEANS_ID`,`status`,`Remarks` from marketing where ID = #{value}
+	</select>
+
+	<select id="list" resultType="com.jurisdiction.inforeport.entity.Marketing">
+		select `ID`,`IMEI_ID`,`MEANS_ID`,`status`,`Remarks` from marketing
+        <where>  
+		  		  <if test="id != null and id != ''"> and ID = #{id} </if>
+		  		  <if test="imeiId != null and imeiId != ''"> and IMEI_ID = #{imeiId} </if>
+		  		  <if test="meansId != null and meansId != ''"> and MEANS_ID = #{meansId} </if>
+		  		  <if test="status != null and status != ''"> and status = #{status} </if>
+		  		  <if test="remarks != null and remarks != ''"> and Remarks = #{remarks} </if>
+		  		</where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+			<otherwise>
+                order by ID desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="count" resultType="int">
+		select count(*) from marketing
+		 <where>  
+		  		  <if test="id != null and id != ''"> and ID = #{id} </if>
+		  		  <if test="imeiId != null and imeiId != ''"> and IMEI_ID = #{imeiId} </if>
+		  		  <if test="meansId != null and meansId != ''"> and MEANS_ID = #{meansId} </if>
+		  		  <if test="status != null and status != ''"> and status = #{status} </if>
+		  		  <if test="remarks != null and remarks != ''"> and Remarks = #{remarks} </if>
+		  		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.jurisdiction.inforeport.entity.Marketing" useGeneratedKeys="true" keyProperty="id">
+		insert into marketing
+		(
+			`IMEI_ID`, 
+			`MEANS_ID`, 
+			`status`, 
+			`Remarks`
+		)
+		values
+		(
+			#{imeiId}, 
+			#{meansId}, 
+			#{status}, 
+			#{remarks}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.jurisdiction.inforeport.entity.Marketing">
+		update marketing 
+		<set>
+			<if test="imeiId != null">`IMEI_ID` = #{imeiId}, </if>
+			<if test="meansId != null">`MEANS_ID` = #{meansId}, </if>
+			<if test="status != null">`status` = #{status}, </if>
+			<if test="remarks != null">`Remarks` = #{remarks}</if>
+		</set>
+		where ID = #{id}
+	</update>
+	
+	<delete id="remove">
+		delete from marketing where ID = #{value}
+	</delete>
+	
+	<delete id="batchRemove">
+		delete from marketing where ID in 
+		<foreach item="id" collection="array" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+	<select id="listCity" resultType="com.jurisdiction.inforeport.entity.CityMarketing">
+
+		select dpg.`name` name,dpg.group_id pid,ud.ids ,count(mtd.id) imeicount
+		from (select uda.group_id,uda.user_id,ugp.ids from   user_datapermissionsgroup uda
+		INNER JOIN (
+		select getDataPermissionsGroupNodeList(dpg.group_id) as ids,udp.user_id  from user_datapermissionsgroup udp
+		INNER  JOIN
+		(select group_id,parent_id,name,order_num,del_flag from data_permissions_group where
+		parent_id in (select group_id from  data_permissions_group where parent_id=0))
+		dpg on(udp.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where> <if test="user_id != null and user_id != ''"> and udp.user_id = #{user_id} </if></where>) ugp
+		on (FIND_IN_SET(uda.group_id,ugp.ids) and uda.user_id=ugp.user_id and uda.selected_state=0)
+		GROUP BY uda.group_id
+		) ud
+		LEFT JOIN data_permissions_group dpg on(substring_index(ud.ids,',', 1)=dpg.group_id  and dpg.del_flag=1)
+		INNER JOIN imei_info ii ON(ud.group_id=ii.GROUP_ID and ii.Status_Market=1)
+		INNER JOIN marketing_data mtd on(ii.IMEI_ID=mtd.IMEI_ID)
+		<where>
+			<if test="startDate != null and startDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &gt;= #{startDate} </if>
+			<if test="endDate != null and endDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &lt;= #{endDate} </if>
+		</where>
+		GROUP BY pid
+		<choose>
+			<when test="sort != null and sort.trim() != ''">
+				order by ${sort} ${order}
+			</when>
+			<otherwise>
+				order by imeicount desc
+			</otherwise>
+		</choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+	<select id="listTac" resultType="com.jurisdiction.inforeport.entity.TacMarketing">
+		select ud.ids ,ii.MODEL_CODE,count(mtd.id) imeicount,te.BRAND_NAME,te.MT_NAME,te.TE_NAME
+		from (select uda.group_id,uda.user_id,ugp.ids from   user_datapermissionsgroup uda
+		INNER JOIN (
+		select getDataPermissionsGroupNodeList(dpg.group_id) as ids,udp.user_id  from user_datapermissionsgroup udp
+		INNER  JOIN
+		(select group_id,parent_id,name,order_num,del_flag from data_permissions_group where
+		parent_id in (select group_id from  data_permissions_group where parent_id=0))
+		dpg on(udp.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where> <if test="user_id != null and user_id != ''"> and udp.user_id = #{user_id} </if></where>) ugp
+		on (FIND_IN_SET(uda.group_id,ugp.ids) and uda.user_id=ugp.user_id and uda.selected_state=0)
+		GROUP BY uda.group_id
+		) ud
+		INNER JOIN imei_info ii ON(ud.group_id=ii.GROUP_ID and ii.Status_Market=1)
+        INNER JOIN marketing_data mtd on(ii.IMEI_ID=mtd.IMEI_ID)
+		left JOIN terminal_equipment te on(ii.MODEL_CODE=te.MODEL_CODE)
+		<where>
+			<if test="startDate != null and startDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &gt;= #{startDate} </if>
+			<if test="endDate != null and endDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &lt;= #{endDate} </if>
+		</where>
+		GROUP BY ii.MODEL_CODE
+
+		<choose>
+			<when test="sort != null and sort.trim() != ''">
+				order by ${sort} ${order}
+			</when>
+			<otherwise>
+				order by imeicount desc
+			</otherwise>
+		</choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+	<select id="listActivity" resultType="com.jurisdiction.inforeport.entity.ActivityMarketing">
+
+		select ud.ids ,count(mtd.ID) imeicount,ms.MEANS_NAME,ms.MEANS_ID
+		from (select uda.group_id,uda.user_id,ugp.ids from   user_datapermissionsgroup uda
+		INNER JOIN (
+		select getDataPermissionsGroupNodeList(dpg.group_id) as ids,udp.user_id  from user_datapermissionsgroup udp
+		INNER  JOIN
+		(select group_id,parent_id,name,order_num,del_flag from data_permissions_group where
+		parent_id in (select group_id from  data_permissions_group where parent_id=0))
+		dpg on(udp.group_id=dpg.group_id  and dpg.del_flag=1)
+		<where> <if test="user_id != null and user_id != ''"> and udp.user_id = #{user_id} </if></where>) ugp
+		on (FIND_IN_SET(uda.group_id,ugp.ids) and uda.user_id=ugp.user_id and uda.selected_state=0)
+		GROUP BY uda.group_id
+		) ud
+		INNER JOIN imei_info ii ON(ud.group_id=ii.GROUP_ID and ii.Status_Market=1)
+        left JOIN marketing_data mtd on(ii.IMEI_ID=mtd.IMEI_ID)
+        INNER JOIN means ms on( mtd.MEAN_ID=ms.ID)
+		<where>
+			<if test="startDate != null and startDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &gt;= #{startDate} </if>
+			<if test="endDate != null and endDate != ''"> and DATE_FORMAT(mtd.OPER_DATE,'%Y-%m-%d') &lt;= #{endDate} </if>
+		</where>
+        GROUP BY mtd.MEAN_ID
+
+		<choose>
+			<when test="sort != null and sort.trim() != ''">
+				order by ${sort} ${order}
+			</when>
+			<otherwise>
+				order by imeicount desc
+			</otherwise>
+		</choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+
+</mapper>

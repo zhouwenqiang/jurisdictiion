@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jurisdiction.inforeport.dao.ImeiInfoDao">
+
+	<select id="get" resultType="com.jurisdiction.inforeport.entity.ImeiInfo">
+		select `IMEI_ID`,`MODEL_CODE`,`BAND_NAME`,`DATE_TIME`,`IMEI_NO`,`STATUS`,`TYPE_CODE`,`CREATE_DATE`,`ENABLE`,`GROUP_ID` from imei_info where IMEI_ID = #{value}
+	</select>
+
+	<select id="list" resultType="com.jurisdiction.inforeport.entity.ImeiInfo">
+		select ii.`IMEI_ID`,ii.`MODEL_CODE`,ii.`BAND_NAME`,ii.`DATE_TIME`,ii.`IMEI_NO`,ii.`STATUS`,ii.`TYPE_CODE`,ii.`CREATE_DATE`,ii.`ENABLE`,ii.`GROUP_ID` ,dpg.`name`
+		from imei_info ii LEFT JOIN data_permissions_group dpg
+		ON(ii.GROUP_ID=dpg.group_id and dpg.del_flag=1)
+		<if test="user_id != null and user_id != ''">
+			INNER   JOIN user_datapermissionsgroup ud on(ud.group_id=dpg.group_id)
+			INNER   JOIN sys_user su on(ud.user_id =su.user_id and su.user_id =#{user_id})
+		</if>
+        <where>
+					and status_market=1
+		  		  <if test="imeiId != null and imeiId != ''"> and ii.IMEI_ID = #{imeiId} </if>
+		  		  <if test="modelCode != null and modelCode != ''"> and ii.MODEL_CODE = #{modelCode} </if>
+		  		  <if test="bandName != null and bandName != ''"> and ii.BAND_NAME = #{bandName} </if>
+		  		  <!--<if test="dateTime != null and dateTime != ''"> and ii.DATE_TIME = #{dateTime} </if>-->
+					<if test="startDate != null and startDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &gt;= #{startDate} </if>
+					<if test="endDate != null and endDate != ''"> and DATE_FORMAT(ii.DATE_TIME,'%Y-%m-%d') &lt;= #{endDate} </if>
+		  		  <if test="imeiNo != null and imeiNo != ''"> and ii.IMEI_NO = #{imeiNo} </if>
+		  		  <if test="status != null and status != ''"> and ii.STATUS = #{status} </if>
+		  		  <if test="typeCode != null and typeCode != ''"> and ii.TYPE_CODE = #{typeCode} </if>
+		  		  <if test="createDate != null and createDate != ''"> and ii.CREATE_DATE = #{createDate} </if>
+		  		  <if test="enable != null and enable != ''"> and ii.ENABLE = #{enable} </if>
+		  		  <if test="groupId != null and groupId != ''"> and ii.GROUP_ID = #{groupId} </if>
+		  		</where>
+        <choose>
+            <when test="sort != null and sort.trim() != ''">
+                order by ${sort} ${order}
+            </when>
+			<otherwise>
+                order by IMEI_ID desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="count" resultType="int">
+		select count(*) from imei_info ii LEFT JOIN data_permissions_group dpg
+		ON(ii.GROUP_ID=dpg.group_id and dpg.del_flag=1)
+		<where>
+					and status_market=1
+		  		  <if test="imeiId != null and imeiId != ''"> and ii.IMEI_ID = #{imeiId} </if>
+		  		  <if test="modelCode != null and modelCode != ''"> and ii.MODEL_CODE = #{modelCode} </if>
+		  		  <if test="bandName != null and bandName != ''"> and ii.BAND_NAME = #{bandName} </if>
+					<if test="startDate != null and startDate != ''"> and ii.DATE_TIME &gt;= #{startDate} </if>
+					<if test="endDate != null and endDate != ''"> and ii.DATE_TIME &lt;= #{endDate} </if>
+		  		  <if test="imeiNo != null and imeiNo != ''"> and ii.IMEI_NO = #{imeiNo} </if>
+		  		  <if test="status != null and status != ''"> and ii.STATUS = #{status} </if>
+		  		  <if test="typeCode != null and typeCode != ''"> and ii.TYPE_CODE = #{typeCode} </if>
+		  		  <if test="createDate != null and createDate != ''"> and ii.CREATE_DATE = #{createDate} </if>
+		  		  <if test="enable != null and enable != ''"> and ii.ENABLE = #{enable} </if>
+		  		  <if test="groupId != null and groupId != ''"> and ii.GROUP_ID = #{groupId} </if>
+		  		</where>
+	</select>
+	 
+	<insert id="save" parameterType="com.jurisdiction.inforeport.entity.ImeiInfo" useGeneratedKeys="true" keyProperty="imeiId">
+		insert into imei_info
+		(
+			`MODEL_CODE`, 
+			`BAND_NAME`, 
+			`DATE_TIME`, 
+			`IMEI_NO`, 
+			`STATUS`, 
+			`TYPE_CODE`, 
+			`CREATE_DATE`, 
+			`ENABLE`, 
+			`GROUP_ID`
+		)
+		values
+		(
+			#{modelCode}, 
+			#{bandName}, 
+			#{dateTime}, 
+			#{imeiNo}, 
+			#{status}, 
+			#{typeCode}, 
+			#{createDate}, 
+			#{enable}, 
+			#{groupId}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="com.jurisdiction.inforeport.entity.ImeiInfo">
+		update imei_info 
+		<set>
+			<if test="modelCode != null">`MODEL_CODE` = #{modelCode}, </if>
+			<if test="bandName != null">`BAND_NAME` = #{bandName}, </if>
+			<if test="dateTime != null">`DATE_TIME` = #{dateTime}, </if>
+			<if test="imeiNo != null">`IMEI_NO` = #{imeiNo}, </if>
+			<if test="status != null">`STATUS` = #{status}, </if>
+			<if test="typeCode != null">`TYPE_CODE` = #{typeCode}, </if>
+			<if test="createDate != null">`CREATE_DATE` = #{createDate}, </if>
+			<if test="enable != null">`ENABLE` = #{enable}, </if>
+			<if test="groupId != null">`GROUP_ID` = #{groupId}</if>
+		</set>
+		where IMEI_ID = #{imeiId}
+	</update>
+	
+	<delete id="remove">
+		delete from imei_info where IMEI_ID = #{value}
+	</delete>
+	
+	<delete id="batchRemove">
+		delete from imei_info where IMEI_ID in 
+		<foreach item="imeiId" collection="array" open="(" separator="," close=")">
+			#{imeiId}
+		</foreach>
+	</delete>
+
+</mapper>
